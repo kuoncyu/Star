@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>北半球星座圖鑑 (每日一星版)</title>
+    <style>
+        :root {
+            /* 星空色系 */
+            --primary: #5c6bc0;    /* 靛藍 */
+            --secondary: #ab47bc;  /* 紫色 */
+            --accent: #ffd54f;     /* 星星金 */
+            --bg: #0f172a;         /* 深夜藍黑 */
+            --card-bg: #1e293b;    /* 卡片深藍 */
+            --text: #e2e8f0;       /* 亮灰白 */
+            --text-muted: #94a3b8; /* 靜音灰 */
+            
+            /* 狀態標籤顏色 */
+            --status-zodiac: #f59e0b;   /* 黃道：金黃 */
+            --status-spring: #4ade80;   /* 春：嫩綠 */
+            --status-summer: #f43f5e;   /* 夏：熱情紅 */
+            --status-autumn: #fbbf24;   /* 秋：橙黃 */
+            --status-winter: #60a5fa;   /* 冬：冰藍 */
+            --status-polar: #a78bfa;    /* 拱極：紫 */
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: "Noto Sans TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* --- Header --- */
+        header {
+            background: linear-gradient(135deg, #0f172a, #312e81);
+            color: white;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            position: sticky; top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #3730a3;
+        }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1.5px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .subtitle { font-size: 0.8rem; opacity: 0.8; margin-top: 5px; color: #c7d2fe; }
+
+        /* --- Navigation --- */
+        .nav {
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px; 
+            padding: 10px 15px;
+            background: #1e293b; 
+            border-bottom: 1px solid #334155;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 78px; z-index: 90;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .nav::-webkit-scrollbar { display: none; }
+        
+        .nav-btn {
+            padding: 8px 18px;
+            border: none; border-radius: 50px;
+            background: #334155; color: #cbd5e1; cursor: pointer;
+            font-weight: bold; transition: all 0.2s; 
+            font-size: 0.9rem; white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .nav-btn.active {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 0 10px rgba(92, 107, 192, 0.5);
+        }
+
+        .container { 
+            max-width: 1000px;
+            margin: 0 auto; padding: 15px; 
+            min-height: 80vh;
+        }
+        .section { display: none; animation: fadeIn 0.3s ease-out; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Daily Card --- */
+        .daily-container { width: 100%; max-width: 480px; margin: 0 auto; text-align: center; }
+        
+        .card-scene {
+            perspective: 1000px;
+            width: 100%; 
+            height: min(580px, 65vh);
+            margin: 20px auto; 
+            position: relative;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%; height: 100%; text-align: center;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            transform-style: preserve-3d;
+        }
+        .card-inner.is-flipped { transform: rotateY(180deg); }
+        
+        .card-face {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden; 
+            -webkit-backface-visibility: hidden;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            overflow: hidden;
+            background: var(--card-bg);
+            border: 1px solid #334155;
+        }
+        
+        .card-front {
+            background: linear-gradient(135deg, #0f172a, #2e1065);
+            color: white; 
+            border: 2px solid #6366f1;
+            z-index: 2;
+            cursor: pointer;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+            padding: 0; justify-content: flex-start;
+            background: #1e293b;
+            z-index: 1;
+        }
+        
+        /* 閃爍星星背景效果 */
+        .stars-bg {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background-image: radial-gradient(white 1px, transparent 1px);
+            background-size: 50px 50px; opacity: 0.2;
+        }
+
+        .daily-img-wrapper { 
+            width: 100%;
+            height: 55%; 
+            background: #000; 
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-in;
+        }
+        .daily-img { 
+            width: 100%;
+            height: 100%; 
+            object-fit: contain; 
+            display: block;
+        }
+        .zoom-hint {
+            position: absolute;
+            bottom: 10px; right: 10px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            color: white; padding: 6px 10px;
+            border-radius: 20px; font-size: 0.75rem;
+            pointer-events: none;
+        }
+
+        .daily-info-box { 
+            padding: 20px;
+            text-align: left; height: 45%; 
+            overflow-y: auto; box-sizing: border-box; 
+            -webkit-overflow-scrolling: touch;
+        }
+        .daily-date { 
+            background: rgba(255,255,255,0.1);
+            padding: 5px 15px; border-radius: 20px; 
+            margin-bottom: 20px; font-size: 0.9rem; letter-spacing: 1px; color: var(--accent);
+        }
+
+        /* --- Tools & Grid --- */
+        .tools-bar {
+            background: #1e293b;
+            padding: 15px; border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px; border: 1px solid #475569;
+            background: #0f172a; color: white;
+            border-radius: 8px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px;
+            -webkit-appearance: none;
+        }
+        .search-box::placeholder { color: #64748b; }
+        
+        .filter-scroll { 
+            display: flex;
+            gap: 8px; overflow-x: auto; padding-bottom: 5px; 
+            scrollbar-width: none; -webkit-overflow-scrolling: touch;
+        }
+        .filter-tag {
+            white-space: nowrap;
+            padding: 6px 14px; border-radius: 15px;
+            background: #334155; border: 1px solid #475569; cursor: pointer; 
+            font-size: 0.85rem; color: #cbd5e1; flex-shrink: 0;
+            transition: 0.2s;
+        }
+        .filter-tag.active { 
+            background: var(--primary); color: white; border-color: var(--primary); 
+            box-shadow: 0 0 8px rgba(92, 107, 192, 0.4);
+        }
+
+        .plant-grid { 
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px; 
+        }
+        .plant-card {
+            background: var(--card-bg);
+            border-radius: 12px; padding: 15px 10px; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; 
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column; justify-content: center; min-height: 110px;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        @media (hover: hover) {
+            .plant-card:hover { 
+                transform: translateY(-5px);
+                border-color: var(--secondary); 
+                box-shadow: 0 0 15px rgba(171, 71, 188, 0.3); 
+            }
+        }
+        .plant-card:active { transform: scale(0.98); background: #26354f; }
+
+        .p-name { font-weight: bold; font-size: 1.1rem; color: #e2e8f0; margin-bottom: 5px; }
+        .p-cat { font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; font-style: italic;}
+        
+        .status-badge {
+            font-size: 0.7rem;
+            color: white; padding: 3px 8px; border-radius: 4px;
+            display: inline-block; font-weight: bold; margin-top: auto;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .st-zodiac { background: var(--status-zodiac); color: #422006; }
+        .st-spring { background: var(--status-spring); color: #064e3b; }
+        .st-summer { background: var(--status-summer); }
+        .st-autumn { background: var(--status-autumn); color: #451a03; }
+        .st-winter { background: var(--status-winter); color: #0c4a6e; }
+        .st-polar  { background: var(--status-polar); }
+
+        /* --- Quiz --- */
+        .quiz-panel {
+            background: #1e293b;
+            padding: 25px 20px; border-radius: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-align: center;
+            max-width: 600px; margin: 0 auto;
+            border: 1px solid #334155;
+        }
+        .q-media-box {
+            height: 280px;
+            background: #0f172a; border: 2px dashed #475569;
+            border-radius: 12px; margin: 20px 0; display: flex;
+            align-items: center; justify-content: center; position: relative;
+            overflow: hidden;
+        }
+        .full-img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
+        
+        .opt-btn {
+            width: 100%;
+            padding: 14px; margin-bottom: 10px; background: #334155;
+            border: 1px solid #475569; border-radius: 10px; font-size: 0.95rem;
+            cursor: pointer; font-weight: bold; color: #e2e8f0;
+            transition: 0.2s;
+        }
+        .opt-btn:active { background: #475569; }
+        .opt-btn.correct { background: #065f46; border-color: #34d399; color: #fff; }
+        .opt-btn.wrong { background: #7f1d1d; border-color: #f87171; color: #fff; }
+
+        /* --- Modal --- */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: none; justify-content: center; align-items: center; padding: 15px;
+            backdrop-filter: blur(8px);
+        }
+        .modal-box {
+            background: #1e293b;
+            width: 100%; max-width: 500px;
+            border-radius: 16px; overflow: hidden; display: flex; flex-direction: column;
+            max-height: 85vh; border: 1px solid #475569;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .img-area { 
+            height: 40vh;
+            background: #000; display: flex; align-items: center; justify-content: center; 
+        }
+        .info-area { padding: 20px; overflow-y: auto; color: #cbd5e1; }
+        
+        .loader {
+            border: 3px solid #334155;
+            border-top: 3px solid var(--accent);
+            border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .reveal-box {
+            background: #0f172a;
+            border: 1px solid #334155; border-radius: 12px;
+            padding: 15px; text-align: left; margin-top: 15px; display: none;
+        }
+
+        @media (min-width: 768px) {
+            .container { padding: 30px; }
+            .plant-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .nav { justify-content: center; top: 85px; }
+            .card-scene { height: 550px; }
+            h1 { font-size: 2rem; }
+            .img-area { height: 300px; }
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌌 北半球星座圖鑑</h1>
+    <div class="subtitle">收錄 50+ 個四季常見星座與神話</div>
+</header>
+
+<div class="nav">
+    <button class="nav-btn active" onclick="setTab('daily', this)">🔭 每日一星</button>
+    <button class="nav-btn" onclick="setTab('guide', this)">📖 星座列表</button>
+    <button class="nav-btn" onclick="setTab('quiz', this)">🪐 天文測驗</button>
+</div>
+
+<div class="container">
+
+    <div id="sec-daily" class="section active">
+        <div class="daily-container">
+            <h2 style="color:var(--primary); margin: 0 0 5px 0; font-size: 1.3rem; color: #a5b4fc;">📅 今天的觀測目標</h2>
+            <p style="color:#94a3b8; font-size:0.85rem; margin-top: 0;">仰望星空，尋找今晚的指引</p>
+            
+            <div class="card-scene">
+                <div class="card-inner" id="daily-card-inner">
+                    <div class="card-face card-front" onclick="flipDailyCard()">
+                        <div class="stars-bg"></div>
+                        <div style="font-size:4rem; margin-bottom:10px; text-shadow: 0 0 20px rgba(255,215,0,0.6);">✨</div>
+                        <h2 style="letter-spacing: 2px; font-size: 1.5rem;">DAILY STAR</h2>
+                        <div class="daily-date" id="daily-date-display">...</div>
+                        <p style="opacity: 0.8; font-size: 0.9rem; color: #c7d2fe;">點擊翻開星圖</p>
+                    </div>
+                    
+                    <div class="card-face card-back">
+                        <div class="daily-img-wrapper" onclick="openDailyZoom()">
+                            <img id="daily-img" class="daily-img" src="" alt="Constellation">
+                            <div class="loader" id="daily-loader" style="position:absolute; top:45%; left:45%;"></div>
+                            <div class="zoom-hint">🔍 點圖放大</div>
+                        </div>
+                        <div class="daily-info-box">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <h2 id="daily-name" style="margin:0; color:var(--accent); font-size: 1.4rem;">載入中...</h2>
+                                <span id="daily-status" class="status-badge"></span>
+                            </div>
+                            <p id="daily-eng" style="color:#94a3b8; font-style:italic; font-size:0.85rem; margin-top:2px;"></p>
+                            <hr style="border:0; border-top:1px solid #334155; margin:10px 0;">
+                            <p id="daily-desc" style="line-height:1.6; color:#cbd5e1; font-size:0.9rem;">
+                                連線宇宙資料庫中...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sec-guide" class="section">
+        <div class="tools-bar">
+            <input type="text" id="search-input" class="search-box" placeholder="搜尋 (如：獵戶座, Leo)..." onkeyup="renderGuide()">
+            <div class="filter-scroll">
+                <div class="filter-tag active" onclick="setFilter('all', this)">全部</div>
+                <div class="filter-tag" onclick="setFilter('zodiac', this)">黃道十二宮</div>
+                <div class="filter-tag" onclick="setFilter('spring', this)">春季星座</div>
+                <div class="filter-tag" onclick="setFilter('summer', this)">夏季星座</div>
+                <div class="filter-tag" onclick="setFilter('autumn', this)">秋季星座</div>
+                <div class="filter-tag" onclick="setFilter('winter', this)">冬季星座</div>
+                <div class="filter-tag" onclick="setFilter('polar', this)">北天拱極</div>
+            </div>
+            <div style="text-align:right; font-size:0.75rem; color:#64748b; margin-top:8px;">
+                收錄數量：<span id="db-count">0</span> 個星座
+            </div>
+        </div>
+        <div id="guide-grid" class="plant-grid"></div>
+    </div>
+
+    <div id="sec-quiz" class="section">
+        <div id="quiz-menu" class="quiz-panel">
+            <h2 style="color:var(--accent); font-size: 1.4rem;">🚀 天文辨識挑戰</h2>
+            <p style="font-size: 0.95rem; color: #cbd5e1;">你能認出幾個夜空中的星座？</p>
+            <br>
+            <div style="font-size:3.5rem; margin-bottom:15px;">🌍</div>
+            <button class="nav-btn" style="background: linear-gradient(90deg, var(--primary), var(--secondary)); color:white; width:100%; padding:15px; font-size:1.1rem; box-shadow: 0 0 15px rgba(92, 107, 192, 0.4);" onclick="startQuiz()">
+                開始觀測
+            </button>
+        </div>
+
+        <div id="quiz-play" class="quiz-panel" style="display:none;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-weight:bold; color:#94a3b8; font-size: 0.9rem;">
+                <span id="q-progress">1 / 10</span>
+                <span>分數: <span id="q-score">0</span></span>
+            </div>
+            
+            <h3 style="margin:0; color:#e2e8f0; font-size: 1.2rem;">這是哪一個星座？</h3>
+            <div id="skip-indicator" class="skip-msg" style="color:#f87171; font-size:0.8rem; display:none;">⚠️ 圖片讀取失敗，自動補題</div>
+
+            <div class="q-media-box">
+                <div class="loader" id="v-loader"></div>
+                <img id="q-img" class="full-img">
+            </div>
+
+            <div id="opt-container"></div>
+            <div id="feedback" style="height:25px; font-weight:bold; margin-top:5px; font-size: 1rem;"></div>
+
+            <div id="reveal-card" class="reveal-box">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <strong id="rev-name" style="font-size:1.2rem; color:var(--accent);"></strong>
+                    <span id="rev-status" class="status-badge"></span>
+                </div>
+                <p id="rev-desc" style="font-size:0.9rem; margin-top:8px; color:#cbd5e1; line-height:1.5;"></p>
+                <a id="rev-link" href="#" target="_blank" style="font-size:0.85rem; display:block; margin-top:10px; color:var(--secondary); font-weight:bold;">📖 查看維基百科</a>
+            </div>
+
+            <button id="next-btn" class="nav-btn" style="width:100%; background:var(--primary); color:white; margin-top:15px; display:none;" onclick="nextQuestion()">下一題 →</button>
+            <button onclick="quitQuiz()" style="background:none; border:none; margin-top:15px; color:#64748b; text-decoration:underline; cursor:pointer; font-size: 0.9rem;">退出挑戰</button>
+        </div>
+
+        <div id="quiz-result" class="quiz-panel" style="display:none;">
+            <h2>🏆 觀測結束</h2>
+            <p>本次得分</p>
+            <h1 id="final-score" style="font-size:3.5rem; margin:10px 0; color:var(--accent); text-shadow: 0 0 10px rgba(255,215,79,0.5);">0</h1>
+            <div id="final-rank" style="font-size:1rem; background:#334155; color:white; padding:6px 20px; border-radius:20px; display:inline-block; font-weight:bold;"></div>
+            <br><br>
+            <button class="nav-btn" onclick="quitQuiz()">返回主選單</button>
+        </div>
+    </div>
+
+</div>
+
+<div id="modal" class="modal" onclick="closeModal(event)">
+    <div class="modal-box">
+        <div class="img-area">
+            <div class="loader" id="m-loader"></div>
+            <img id="m-img" class="full-img">
+            <div id="m-err" style="display:none; color:#cbd5e1;">無圖片資料</div>
+        </div>
+        <div class="info-area">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <h2 id="m-name" style="margin:0; color:var(--accent); font-size: 1.5rem;"></h2>
+                <span id="m-status" class="status-badge" style="margin:0;"></span>
+            </div>
+            <div id="m-latin" style="color:#94a3b8; font-style:italic; margin-bottom:10px; margin-top:2px; font-size: 0.9rem;"></div>
+            <p id="m-desc" style="line-height:1.6; color:#cbd5e1; font-size: 0.95rem;">讀取中...</p>
+            
+            <a id="m-wiki" href="#" target="_blank" style="display:block; text-align:center; margin-top:20px; padding:12px; background:#334155; color:var(--accent); text-decoration:none; border-radius:8px; font-weight:bold;">前往維基百科閱讀更多</a>
+        </div>
+        <button onclick="closeModal(null)" style="width:100%; padding:15px; border:none; background:#0f172a; color:#94a3b8; cursor:pointer; font-size:1rem; border-top:1px solid #334155; font-weight: bold;">關閉視窗</button>
+    </div>
+</div>
+
+<script>
+    // --- 北半球常見星座資料庫 ---
+    // cat: zodiac(黃道), spring, summer, autumn, winter, polar(拱極)
+    const constellations = [
+        // --- 黃道十二宮 (Zodiac) ---
+        { name: "白羊座", eng: "Aries", cat: "zodiac", status: "黃道/火象" },
+        { name: "金牛座", eng: "Taurus", cat: "zodiac", status: "黃道/畢宿五" },
+        { name: "雙子座", eng: "Gemini", cat: "zodiac", status: "黃道/北河三" },
+        { name: "巨蟹座", eng: "Cancer", cat: "zodiac", status: "黃道/星團" },
+        { name: "獅子座", eng: "Leo", cat: "zodiac", status: "黃道/軒轅十四" },
+        { name: "室女座", eng: "Virgo", cat: "zodiac", status: "黃道/角宿一" },
+        { name: "天秤座", eng: "Libra", cat: "zodiac", status: "黃道/平衡" },
+        { name: "天蠍座", eng: "Scorpius", cat: "zodiac", status: "黃道/心宿二" },
+        { name: "人馬座", eng: "Sagittarius", cat: "zodiac", status: "黃道/銀河中心", wikiTerm: "人馬座" }, // 射手座
+        { name: "摩羯座", eng: "Capricornus", cat: "zodiac", status: "黃道/半羊魚" },
+        { name: "寶瓶座", eng: "Aquarius", cat: "zodiac", status: "黃道/水瓶" },
+        { name: "雙魚座", eng: "Pisces", cat: "zodiac", status: "黃道/兩條魚" },
+
+        // --- 冬季星座 (Winter) ---
+        { name: "獵戶座", eng: "Orion", cat: "winter", status: "冬季/腰帶三星" },
+        { name: "大犬座", eng: "Canis Major", cat: "winter", status: "冬季/天狼星" },
+        { name: "小犬座", eng: "Canis Minor", cat: "winter", status: "冬季/南河三" },
+        { name: "御夫座", eng: "Auriga", cat: "winter", status: "冬季/五車二" },
+        { name: "麒麟座", eng: "Monoceros", cat: "winter", status: "冬季/黯淡" },
+        { name: "天兔座", eng: "Lepus", cat: "winter", status: "冬季/獵戶腳下" },
+        { name: "波江座", eng: "Eridanus", cat: "winter", status: "冬季/河流" },
+
+        // --- 春季星座 (Spring) ---
+        { name: "牧夫座", eng: "Boötes", cat: "spring", status: "春季/大角星" },
+        { name: "北冕座", eng: "Corona Borealis", cat: "spring", status: "春季/皇冠" },
+        { name: "獵犬座", eng: "Canes Venatici", cat: "spring", status: "春季/M51" },
+        { name: "烏鴉座", eng: "Corvus", cat: "spring", status: "春季/四邊形" },
+        { name: "巨爵座", eng: "Crater", cat: "spring", status: "春季/聖杯" },
+        { name: "長蛇座", eng: "Hydra", cat: "spring", status: "春季/最長星座" },
+        { name: "后髮座", eng: "Coma Berenices", cat: "spring", status: "春季/星團" },
+
+        // --- 夏季星座 (Summer) ---
+        { name: "天琴座", eng: "Lyra", cat: "summer", status: "夏季/織女星" },
+        { name: "天鷹座", eng: "Aquila", cat: "summer", status: "夏季/牛郎星" },
+        { name: "天鵝座", eng: "Cygnus", cat: "summer", status: "夏季/天津四" },
+        { name: "海豚座", eng: "Delphinus", cat: "summer", status: "夏季/可愛" },
+        { name: "武仙座", eng: "Hercules", cat: "summer", status: "夏季/球狀星團" },
+        { name: "蛇夫座", eng: "Ophiuchus", cat: "summer", status: "夏季/第十三宮" },
+        { name: "巨蛇座", eng: "Serpens", cat: "summer", status: "夏季/唯一分開" },
+        { name: "天箭座", eng: "Sagitta", cat: "summer", status: "夏季/小巧" },
+        { name: "狐狸座", eng: "Vulpecula", cat: "summer", status: "夏季/啞鈴星雲" },
+
+        // --- 秋季星座 (Autumn) ---
+        { name: "飛馬座", eng: "Pegasus", cat: "autumn", status: "秋季/四邊形" },
+        { name: "仙女座", eng: "Andromeda", cat: "autumn", status: "秋季/大星系" },
+        { name: "英仙座", eng: "Perseus", cat: "autumn", status: "秋季/流星雨" },
+        { name: "鯨魚座", eng: "Cetus", cat: "autumn", status: "秋季/海怪" },
+        { name: "南魚座", eng: "Piscis Austrinus", cat: "autumn", status: "秋季/北落師門" },
+        { name: "三角座", eng: "Triangulum", cat: "autumn", status: "秋季/風車星系" },
+        { name: "白羊座", eng: "Aries", cat: "autumn", status: "秋季/公羊" }, // 重複標記方便搜尋
+        { name: "雙魚座", eng: "Pisces", cat: "autumn", status: "秋季/V字形" }, // 重複標記
+
+        // --- 北天拱極/其他 (Polar/Other) ---
+        { name: "大熊座", eng: "Ursa Major", cat: "polar", status: "拱極/北斗七星" },
+        { name: "小熊座", eng: "Ursa Minor", cat: "polar", status: "拱極/北極星" },
+        { name: "仙后座", eng: "Cassiopeia", cat: "polar", status: "拱極/W形" },
+        { name: "仙王座", eng: "Cepheus", cat: "polar", status: "拱極/國王" },
+        { name: "天龍座", eng: "Draco", cat: "polar", status: "拱極/盤繞" },
+        { name: "鹿豹座", eng: "Camelopardalis", cat: "polar", status: "拱極/黯淡" },
+        { name: "天貓座", eng: "Lynx", cat: "polar", status: "春季/暗淡" }
+    ];
+
+    // --- Helper Functions ---
+    function getStatusClass(status) {
+        if (status.includes("黃道")) return "st-zodiac";
+        if (status.includes("春季")) return "st-spring";
+        if (status.includes("夏季")) return "st-summer";
+        if (status.includes("秋季")) return "st-autumn";
+        if (status.includes("冬季")) return "st-winter";
+        if (status.includes("拱極") || status.includes("北斗") || status.includes("北極")) return "st-polar";
+        return "st-polar"; // Default fallback
+    }
+
+    const getWikiData = async (name, wikiTerm = null) => {
+        try {
+            const term = wikiTerm || name;
+            const res = await fetch(`https://zh.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`);
+            if(!res.ok) throw new Error();
+            return await res.json();
+        } catch(e) { return null; }
+    };
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        renderGuide();
+        document.getElementById('db-count').innerText = constellations.length;
+        
+        // 每日一星日期
+        const today = new Date();
+        const dateStr = `${today.getFullYear()} . ${today.getMonth()+1} . ${today.getDate()}`;
+        document.getElementById('daily-date-display').innerText = dateStr;
+    });
+
+    // --- Tab Switching ---
+    function setTab(tab, btn) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(`sec-${tab}`).classList.add('active');
+        btn.classList.add('active');
+        window.scrollTo(0, 0);
+
+        if (tab !== 'quiz') quitQuiz();
+    }
+
+    // --- Guide ---
+    let currentFilter = 'all';
+    function renderGuide() {
+        const grid = document.getElementById('guide-grid');
+        grid.innerHTML = '';
+        const term = document.getElementById('search-input').value.toLowerCase();
+        
+        const list = constellations.filter(p => {
+            let matchCat = false;
+            if(currentFilter === 'all') matchCat = true;
+            else if(currentFilter === 'zodiac') matchCat = p.cat === 'zodiac';
+            else if(currentFilter === 'spring') matchCat = p.cat === 'spring' || p.status.includes('春季');
+            else if(currentFilter === 'summer') matchCat = p.cat === 'summer' || p.status.includes('夏季');
+            else if(currentFilter === 'autumn') matchCat = p.cat === 'autumn' || p.status.includes('秋季');
+            else if(currentFilter === 'winter') matchCat = p.cat === 'winter' || p.status.includes('冬季');
+            else if(currentFilter === 'polar') matchCat = p.cat === 'polar' || p.status.includes('拱極');
+            else matchCat = p.cat.includes(currentFilter);
+            
+            const matchSearch = p.name.includes(term) || p.eng.toLowerCase().includes(term);
+            return matchCat && matchSearch;
+        });
+
+        // 移除重複顯示 (因為有些星座同時標記了季節和類別)
+        const uniqueList = [...new Map(list.map(item => [item.name, item])).values()];
+
+        uniqueList.forEach(p => {
+            const el = document.createElement('div');
+            el.className = 'plant-card';
+            el.innerHTML = `
+                <div class="p-name">${p.name}</div>
+                <div class="p-cat">${p.eng}</div>
+                <div class="status-badge ${getStatusClass(p.status)}">${p.status.split('/')[0]}</div>
+            `;
+            el.onclick = () => openModal(p);
+            grid.appendChild(el);
+        });
+    }
+
+    function setFilter(cat, btn) {
+        currentFilter = cat;
+        document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        renderGuide();
+    }
+
+    // --- Daily Card Logic ---
+    let isDailyFlipped = false;
+    let currentDailyItem = null;
+
+    function flipDailyCard() {
+        if (isDailyFlipped) return;
+        
+        const cardInner = document.getElementById('daily-card-inner');
+        cardInner.classList.add('is-flipped');
+        isDailyFlipped = true;
+        
+        loadDailyItemData();
+    }
+    
+    function openDailyZoom() {
+        if (!currentDailyItem) return;
+        openModal(currentDailyItem);
+    }
+
+    async function loadDailyItemData() {
+        const todayStr = new Date().toDateString();
+        let hash = 0;
+        for (let i = 0; i < todayStr.length; i++) hash = todayStr.charCodeAt(i) + ((hash << 5) - hash);
+        const seed = Math.abs(hash); 
+        const index = seed % constellations.length;
+        const item = constellations[index];
+        currentDailyItem = item;
+
+        document.getElementById('daily-name').innerText = item.name;
+        document.getElementById('daily-eng').innerText = item.eng;
+        
+        const badge = document.getElementById('daily-status');
+        badge.innerText = item.status;
+        badge.className = `status-badge ${getStatusClass(item.status)}`;
+
+        const data = await getWikiData(item.name, item.wikiTerm);
+        const img = document.getElementById('daily-img');
+        const loader = document.getElementById('daily-loader');
+        const desc = document.getElementById('daily-desc');
+
+        if(data) {
+            desc.innerText = data.extract ? (data.extract.substring(0, 100) + "...") : "暫無詳細介紹。";
+            const src = data.originalimage ? data.originalimage.source : (data.thumbnail ? data.thumbnail.source : null);
+            if(src) {
+                img.src = src;
+                img.onload = () => { loader.style.display = 'none'; };
+            } else {
+                loader.style.display = 'none';
+                img.alt = "No Image Available";
+                img.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Celestia.png/640px-Celestia.png"; // Fallback space image
+            }
+        } else {
+            loader.style.display = 'none';
+            desc.innerText = "資料讀取失敗，請檢查網路連線。";
+        }
+    }
+
+
+    // --- Modal ---
+    async function openModal(item) {
+        const modal = document.getElementById('modal');
+        const img = document.getElementById('m-img');
+        const loader = document.getElementById('m-loader');
+        
+        modal.style.display = 'flex';
+        img.style.display = 'none';
+        loader.style.display = 'block';
+        document.getElementById('m-err').style.display = 'none';
+        document.getElementById('m-name').innerText = item.name;
+        document.getElementById('m-latin').innerText = item.eng;
+        document.getElementById('m-desc').innerText = "連線百科中...";
+        document.getElementById('m-wiki').href = `https://zh.wikipedia.org/wiki/${item.wikiTerm || item.name}`;
+        
+        const badge = document.getElementById('m-status');
+        badge.innerText = item.status;
+        badge.className = `status-badge ${getStatusClass(item.status)}`;
+
+        const data = await getWikiData(item.name, item.wikiTerm);
+        if(data) {
+            document.getElementById('m-desc').innerText = data.extract || "無詳細摘要";
+            const src = data.originalimage ? data.originalimage.source : (data.thumbnail ? data.thumbnail.source : null);
+            if(src) {
+                img.src = src;
+                img.onload = () => { loader.style.display='none'; img.style.display='block'; };
+            } else {
+                loader.style.display='none';
+                document.getElementById('m-err').style.display='block';
+            }
+        } else {
+            loader.style.display='none';
+            document.getElementById('m-desc').innerText = "資料讀取失敗。";
+        }
+    }
+
+    function closeModal(e) {
+        if(!e || e.target.id === 'modal') {
+            document.getElementById('modal').style.display = 'none';
+        }
+    }
+
+    // --- Quiz ---
+    let gameState = { pool: [], queue: [], idx: 0, score: 0, answering: false };
+    let retryCount = 0;
+
+    function startQuiz() {
+        // Remove duplicates for quiz
+        const uniquePool = [...new Map(constellations.map(item => [item.name, item])).values()];
+        let pool = [...uniquePool].sort(() => Math.random() - 0.5);
+        gameState = { pool: pool, queue: pool.slice(0, 10), idx: 0, score: 0, answering: false };
+        retryCount = 0;
+        document.getElementById('quiz-menu').style.display = 'none';
+        document.getElementById('quiz-result').style.display = 'none';
+        document.getElementById('quiz-play').style.display = 'block';
+        document.getElementById('q-score').innerText = 0;
+        loadQuestion();
+    }
+
+    async function loadQuestion() {
+        if(gameState.idx >= 10) { finishQuiz(); return; }
+        
+        const item = gameState.queue[gameState.idx];
+        gameState.answering = true;
+
+        document.getElementById('q-progress').innerText = `${gameState.idx+1} / 10`;
+        document.getElementById('reveal-card').style.display = 'none';
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('skip-indicator').style.display = 'none';
+        document.getElementById('q-img').style.display = 'none';
+        document.getElementById('v-loader').style.display = 'block';
+
+        const data = await getWikiData(item.name, item.wikiTerm);
+        const src = data && (data.originalimage ? data.originalimage.source : (data.thumbnail ? data.thumbnail.source : null));
+        
+        // 如果該詞條沒有圖片 (星座有時會這樣)，則跳過
+        if(!src || src.includes('icon') || src.includes('Symbol')) {
+            handleSkip();
+            return;
+        }
+
+        const img = document.getElementById('q-img');
+        img.src = src;
+        img.onload = () => {
+            document.getElementById('v-loader').style.display = 'none';
+            img.style.display = 'block';
+            retryCount = 0;
+        };
+        img.onerror = () => { handleSkip(); }
+
+        let opts = [item];
+        const uniquePool = [...new Map(constellations.map(p => [p.name, p])).values()];
+        let pool = uniquePool.filter(p => p.name !== item.name);
+        
+        for(let i=0; i<3; i++) opts.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+        opts.sort(() => Math.random() - 0.5);
+        document.getElementById('opt-container').innerHTML = opts.map(p => 
+            `<button class="opt-btn" onclick="checkAnswer(this, '${p.name}')">${p.name}</button>`
+        ).join('');
+    }
+
+    function handleSkip() {
+        retryCount++;
+        if(retryCount > 10) {
+            alert("目前網路連線無法取得足夠圖片，請稍後再試。");
+            quitQuiz();
+            return;
+        }
+        let replacementIndex = 10 + retryCount;
+        if(replacementIndex < gameState.pool.length) {
+            gameState.queue[gameState.idx] = gameState.pool[replacementIndex];
+            document.getElementById('skip-indicator').style.display = 'block';
+            loadQuestion();
+        } else {
+            finishQuiz();
+        }
+    }
+
+    function checkAnswer(btn, name) {
+        if(!gameState.answering) return;
+        gameState.answering = false;
+        
+        const correct = gameState.queue[gameState.idx];
+        const isRight = name === correct.name;
+        if(isRight) {
+            btn.classList.add('correct');
+            document.getElementById('feedback').innerText = "⭕ 觀測正確！";
+            document.getElementById('feedback').style.color = "#4ade80";
+            gameState.score += 10;
+        } else {
+            btn.classList.add('wrong');
+            document.getElementById('feedback').innerText = `❌ 答案是：${correct.name}`;
+            document.getElementById('feedback').style.color = "#f87171";
+            document.querySelectorAll('.opt-btn').forEach(b => {
+                if(b.innerText === correct.name) b.classList.add('correct');
+            });
+        }
+        document.getElementById('q-score').innerText = gameState.score;
+        document.getElementById('next-btn').style.display = 'block';
+
+        const rev = document.getElementById('reveal-card');
+        rev.style.display = 'block';
+        document.getElementById('rev-name').innerText = correct.name;
+        document.getElementById('rev-link').href = `https://zh.wikipedia.org/wiki/${correct.wikiTerm || correct.name}`;
+        
+        const badge = document.getElementById('rev-status');
+        badge.innerText = correct.status;
+        badge.className = `status-badge ${getStatusClass(correct.status)}`;
+
+        getWikiData(correct.name, correct.wikiTerm).then(d => document.getElementById('rev-desc').innerText = d ? d.extract : "無資料");
+    }
+
+    function nextQuestion() {
+        gameState.idx++;
+        loadQuestion();
+    }
+
+    function finishQuiz() {
+        document.getElementById('quiz-play').style.display = 'none';
+        document.getElementById('quiz-result').style.display = 'block';
+        document.getElementById('final-score').innerText = gameState.score;
+        
+        let rank = "";
+        if(gameState.score === 100) rank = "🌌 星際領航員";
+        else if(gameState.score >= 80) rank = "🔭 天文愛好者";
+        else if(gameState.score >= 60) rank = "✨ 觀星新手";
+        else rank = "🌑 迷途的太空人";
+        document.getElementById('final-rank').innerText = rank;
+    }
+
+    function quitQuiz() {
+        document.getElementById('quiz-play').style.display = 'none';
+        document.getElementById('quiz-result').style.display = 'none';
+        document.getElementById('quiz-menu').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
